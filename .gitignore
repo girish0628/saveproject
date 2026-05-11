@@ -1,0 +1,10 @@
+/DATA
+/log
+*.log
+*.log.*
+*.vscode
+*.claude
+__pycache__
+*.pyc
+*.pyo
+*.pyd
