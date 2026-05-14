@@ -55,11 +55,14 @@ class GetProjectByIdTool:
         self.canRunInBackground = False
 
     def getParameterInfo(self) -> list:
+        p_result = arcpy.Parameter(displayName="Result (JSON)", name="result",
+                                   datatype="GPString", parameterType="Derived", direction="Output")
         return [
             arcpy.Parameter(displayName="User Email", name="userEmail",
                             datatype="GPString", parameterType="Required", direction="Input"),
             arcpy.Parameter(displayName="Project ID", name="projectId",
                             datatype="GPString", parameterType="Required", direction="Input"),
+            p_result,
         ]
 
     def isLicensed(self) -> bool:  return True
@@ -70,5 +73,8 @@ class GetProjectByIdTool:
         if p.altered and not p.valueAsText:
             p.setErrorMessage("Project ID is required.")
 
-    def execute(self, parameters, messages): run(parameters, messages)
-    def postExecute(self, parameters):       pass
+    def execute(self, parameters, messages):
+        response = run(parameters, messages)
+        parameters[2].value = response.to_json()
+
+    def postExecute(self, parameters): pass

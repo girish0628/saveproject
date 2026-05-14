@@ -67,6 +67,8 @@ def _b64_to_blob(b64_str: Optional[str]) -> Optional[bytearray]:
     """Decode a Base64 string to a bytearray for ArcPy BLOB cursor writes."""
     if not b64_str:
         return None
+    if "," in b64_str:  # strip data:image/...;base64, prefix if present
+        b64_str = b64_str.split(",", 1)[1]
     return bytearray(base64.b64decode(b64_str))
 
 

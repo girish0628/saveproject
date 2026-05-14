@@ -51,11 +51,20 @@ class GetAllProjectsTool:
         self.canRunInBackground = False
 
     def getParameterInfo(self) -> list:
-        return [arcpy.Parameter(displayName="User Email", name="userEmail",
-                                datatype="GPString", parameterType="Required", direction="Input")]
+        p_result = arcpy.Parameter(displayName="Result (JSON)", name="result",
+                                   datatype="GPString", parameterType="Derived", direction="Output")
+        return [
+            arcpy.Parameter(displayName="User Email", name="userEmail",
+                            datatype="GPString", parameterType="Required", direction="Input"),
+            p_result,
+        ]
 
     def isLicensed(self) -> bool:  return True
     def updateParameters(self, parameters): pass
     def updateMessages(self, parameters):   pass
-    def execute(self, parameters, messages): run(parameters, messages)
-    def postExecute(self, parameters):       pass
+
+    def execute(self, parameters, messages):
+        response = run(parameters, messages)
+        parameters[1].value = response.to_json()
+
+    def postExecute(self, parameters): pass

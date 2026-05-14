@@ -85,6 +85,8 @@ class CreateProjectTool:
         p_shared = arcpy.Parameter(displayName="Shared", name="shared",
                                    datatype="GPBoolean", parameterType="Optional", direction="Input")
         p_shared.value = False
+        p_result = arcpy.Parameter(displayName="Result (JSON)", name="result",
+                                   datatype="GPString", parameterType="Derived", direction="Output")
         return [
             _req("User Email",               "userEmail"),
             _req("Project Name",             "name"),
@@ -96,6 +98,7 @@ class CreateProjectTool:
             _opt("Permissions",              "permissions"),
             _opt("Thumbnail (Base64)",       "thumbnail"),
             p_shared,
+            p_result,
         ]
 
     def isLicensed(self) -> bool:  return True
@@ -119,5 +122,8 @@ class CreateProjectTool:
             except Exception:
                 e.setErrorMessage("Extent must be valid JSON.")
 
-    def execute(self, parameters, messages): run(parameters, messages)
-    def postExecute(self, parameters):       pass
+    def execute(self, parameters, messages):
+        response = run(parameters, messages)
+        parameters[10].value = response.to_json()
+
+    def postExecute(self, parameters): pass
