@@ -57,12 +57,15 @@ class GetProjectByIdTool:
     def getParameterInfo(self) -> list:
         p_result = arcpy.Parameter(displayName="Result (JSON)", name="result",
                                    datatype="GPString", parameterType="Derived", direction="Output")
+        p_thumbnail = arcpy.Parameter(displayName="Thumbnail (Base64)", name="thumbnailBase64",
+                                      datatype="GPString", parameterType="Derived", direction="Output")
         return [
             arcpy.Parameter(displayName="User Email", name="userEmail",
                             datatype="GPString", parameterType="Required", direction="Input"),
             arcpy.Parameter(displayName="Project ID", name="projectId",
                             datatype="GPString", parameterType="Required", direction="Input"),
             p_result,
+            p_thumbnail,
         ]
 
     def isLicensed(self) -> bool:  return True
@@ -75,6 +78,8 @@ class GetProjectByIdTool:
 
     def execute(self, parameters, messages):
         response = run(parameters, messages)
-        parameters[2].value = response.to_json()
+        arcpy.SetParameterAsText(2, response.to_json())
+        if response.success and isinstance(response.data, dict):
+            arcpy.SetParameterAsText(3, response.data.get("thumbnail") or "")
 
     def postExecute(self, parameters): pass

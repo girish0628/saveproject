@@ -75,6 +75,6 @@ class DeleteProjectTool:
 
     def execute(self, parameters, messages):
         response = run(parameters, messages)
-        parameters[2].value = response.to_json()
+        arcpy.SetParameterAsText(2, response.to_json())
 
     def postExecute(self, parameters): pass

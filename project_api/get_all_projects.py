@@ -65,6 +65,6 @@ class GetAllProjectsTool:
 
     def execute(self, parameters, messages):
         response = run(parameters, messages)
-        parameters[1].value = response.to_json()
+        arcpy.SetParameterAsText(1, response.to_json())
 
     def postExecute(self, parameters): pass
