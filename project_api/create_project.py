@@ -47,7 +47,8 @@ def run(parameters: list, messages: object) -> ResponseModel:
         if thumbnail:    data[FIELD_THUMBNAIL]    = thumbnail
         if shared_raw:   data[FIELD_SHARED]       = shared_raw
 
-        response = ProjectService(user_email=user_email).create_project(data)
+        portal_url, token = _get_portal_context()
+        response = ProjectService(user_email=user_email, portal_url=portal_url, token=token).create_project(data)
         _emit(response)
         return response
     except Exception as exc:
@@ -62,6 +63,13 @@ def _get_str(parameters: list, index: int) -> str:
         return val.strip() if val else ""
     except (IndexError, AttributeError):
         return ""
+
+
+def _get_portal_context():
+    portal_url = arcpy.GetActivePortalURL() or ""
+    token_info = arcpy.GetSigninToken() or {}
+    token = token_info.get("token", "") if isinstance(token_info, dict) else ""
+    return portal_url, token
 
 
 def _emit(response: ResponseModel) -> None:

@@ -22,7 +22,8 @@ def run(parameters: list, messages: object) -> ResponseModel:
         if not user_email:
             arcpy.AddError("Parameter 'userEmail' is required.")
             return ResponseModel.error("userEmail is required.", 400)
-        response = ProjectService(user_email=user_email).get_all_projects()
+        portal_url, token = _get_portal_context()
+        response = ProjectService(user_email=user_email, portal_url=portal_url, token=token).get_all_projects()
         _emit(response)
         return response
     except Exception as exc:
@@ -37,6 +38,13 @@ def _get_str(parameters: list, index: int) -> str:
         return val.strip() if val else ""
     except (IndexError, AttributeError):
         return ""
+
+
+def _get_portal_context():
+    portal_url = arcpy.GetActivePortalURL() or ""
+    token_info = arcpy.GetSigninToken() or {}
+    token = token_info.get("token", "") if isinstance(token_info, dict) else ""
+    return portal_url, token
 
 
 def _emit(response: ResponseModel) -> None:

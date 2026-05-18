@@ -38,6 +38,7 @@ from helpers.constants import (
     SHARED_TRUE,
     UPDATE_FIELDS,
 )
+from helpers.portal_utils import is_user_in_portal_group
 from helpers.project_model import Project
 from helpers.utils import (
     ArcPyMessageHandler,
@@ -131,10 +132,6 @@ def _parse_permissions(raw: Optional[str]) -> Dict[str, str]:
     return result
 
 
-def _has_view_access(raw: Optional[str], user_email: str) -> bool:
-    return _parse_permissions(raw).get(user_email.lower()) in (PERMISSION_EDIT, PERMISSION_VIEW)
-
-
 # ---------------------------------------------------------------------------
 # Validator
 # ---------------------------------------------------------------------------
@@ -177,7 +174,7 @@ class ProjectValidator:
                 continue
             parts = entry.split(PERMISSION_ROLE_DELIMITER, maxsplit=1)
             if len(parts) != 2:
-                raise ValueError(f"PERMISSIONS entry '{entry}' must follow 'email:ROLE' format.")
+                raise ValueError(f"PERMISSIONS entry '{entry}' must follow 'email:ROLE' or 'groupId:ROLE' format.")
             role = parts[1].strip().upper()
             if role not in (PERMISSION_EDIT, PERMISSION_VIEW):
                 raise ValueError(f"Unknown role '{role}' in '{entry}'. Allowed: EDIT, VIEW.")
@@ -253,20 +250,46 @@ class ProjectValidator:
 class ProjectService:
     """CRUD service for the PROJECTS feature class. One instance per tool call."""
 
-    def __init__(self, user_email: str) -> None:
+    def __init__(self, user_email: str, portal_url: str = "", token: str = "") -> None:
         if not user_email or not user_email.strip():
             raise ValueError("user_email must not be empty.")
-        self._user_email: str = user_email.strip().lower()
+        self._user_email:   str            = user_email.strip().lower()
+        self._portal_url:   str            = portal_url.strip()
+        self._token:        str            = token.strip()
+        self._group_cache:  Dict[str, bool] = {}
         logger.info("ProjectService initialised for user: %s", self._user_email)
 
     def _row_to_project(self, row: Dict[str, Any]) -> Project:
         return Project.from_row(row)
 
+    def _has_permission_access(self, raw: Optional[str]) -> bool:
+        """Returns True if the current user has a direct email or group-based permission."""
+        perms = _parse_permissions(raw)
+        if not perms:
+            return False
+        for identifier in perms:
+            if "@" in identifier:
+                if identifier == self._user_email:
+                    return True
+            elif self._portal_url and self._token:
+                # Group ID — check portal membership, cache per group per request
+                if identifier not in self._group_cache:
+                    try:
+                        self._group_cache[identifier] = is_user_in_portal_group(
+                            self._portal_url, identifier, self._user_email, self._token
+                        )
+                    except Exception:
+                        logger.warning("Group membership check failed for group '%s'.", identifier)
+                        self._group_cache[identifier] = False
+                if self._group_cache[identifier]:
+                    return True
+        return False
+
     def _can_access(self, project: Project) -> bool:
         return (
             project.owner.lower() == self._user_email
             or project.is_shared()
-            or _has_view_access(project.permissions, self._user_email)
+            or self._has_permission_access(project.permissions)
         )
 
     def _assert_owner(self, project: Project) -> None:
