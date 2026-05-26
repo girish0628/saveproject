@@ -26,12 +26,13 @@ FIELD_LAST_EDITED_USER: str = "last_edited_user"
 FIELD_LAST_EDITED_DATE: str = "last_edited_date"
 FIELD_SHARED:           str = "SHARED"
 FIELD_OWNER:            str = "OWNER"
+FIELD_APP_NAME:         str = "APP_NAME"
 
 # Cursor field lists
 INSERT_FIELDS: list = [
     FIELD_PROJECT_ID, FIELD_NAME, FIELD_DESCRIPTION, FIELD_WEBMAP_ID,
     FIELD_EXTENT, FIELD_MAP_STATE, FIELD_GRAPHICS, FIELD_PERMISSIONS,
-    FIELD_THUMBNAIL, FIELD_SHARED, FIELD_OWNER,
+    FIELD_THUMBNAIL, FIELD_SHARED, FIELD_OWNER, FIELD_APP_NAME,
 ]
 
 SELECT_FIELDS: list = [
@@ -39,12 +40,13 @@ SELECT_FIELDS: list = [
     FIELD_WEBMAP_ID, FIELD_EXTENT, FIELD_MAP_STATE, FIELD_GRAPHICS,
     FIELD_PERMISSIONS, FIELD_THUMBNAIL, FIELD_GLOBAL_ID, FIELD_CREATED_USER,
     FIELD_CREATE_DATE, FIELD_LAST_EDITED_USER, FIELD_LAST_EDITED_DATE,
-    FIELD_SHARED, FIELD_OWNER,
+    FIELD_SHARED, FIELD_OWNER, FIELD_APP_NAME,
 ]
 
 UPDATE_FIELDS: list = [
     FIELD_NAME, FIELD_DESCRIPTION, FIELD_MAP_STATE, FIELD_GRAPHICS,
     FIELD_THUMBNAIL, FIELD_EXTENT, FIELD_PERMISSIONS, FIELD_SHARED,
+    FIELD_APP_NAME,
 ]
 
 # Field max lengths  (THUMBNAIL is BLOB — no length limit)
@@ -60,6 +62,7 @@ FIELD_MAX_LENGTHS: dict = {
     FIELD_CREATED_USER:      255,
     FIELD_LAST_EDITED_USER:  255,
     FIELD_OWNER:             255,
+    FIELD_APP_NAME:          255,
 }
 
 # Permissions
@@ -84,6 +87,6 @@ MSG_INTERNAL_ERROR:       str = "An internal server error occurred."
 _BASE_DIR:        str = str(Path(__file__).resolve().parent.parent)
 LOG_DIR:          str = os.path.join(_BASE_DIR, "logs")
 LOG_FILE:         str = os.path.join(LOG_DIR, "project_api.log")
-LOG_LEVEL:        int = getattr(logging, os.environ.get("LOG_LEVEL", "DEBUG").upper(), logging.DEBUG)
-LOG_MAX_BYTES:    int = 5 * 1024 * 1024
-LOG_BACKUP_COUNT: int = 3
+LOG_LEVEL:        int = getattr(logging, os.environ.get("LOG_LEVEL", "INFO").upper(), logging.INFO)
+LOG_MAX_BYTES:    int = 10 * 1024 * 1024
+LOG_BACKUP_COUNT: int = 5

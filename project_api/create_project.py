@@ -12,7 +12,7 @@ if _PROJECT_ROOT not in sys.path:
 import arcpy
 
 from helpers.constants import (
-    FIELD_DESCRIPTION, FIELD_EXTENT, FIELD_GRAPHICS, FIELD_MAP_STATE,
+    FIELD_APP_NAME, FIELD_DESCRIPTION, FIELD_EXTENT, FIELD_GRAPHICS, FIELD_MAP_STATE,
     FIELD_NAME, FIELD_PERMISSIONS, FIELD_SHARED, FIELD_THUMBNAIL, FIELD_WEBMAP_ID,
 )
 from helpers.project_service import ProjectService
@@ -30,15 +30,16 @@ def run(parameters: list, messages: object) -> ResponseModel:
 
         name        = _get_str(parameters, 1)
         webmap_id   = _get_str(parameters, 2)
-        description = _get_str(parameters, 3)
-        extent      = _get_str(parameters, 4)
-        map_state   = _get_str(parameters, 5)
-        graphics    = _get_str(parameters, 6)
-        permissions = _get_str(parameters, 7)
-        thumbnail   = _get_str(parameters, 8)
-        shared_raw  = _get_str(parameters, 9)
+        app_name    = _get_str(parameters, 3)
+        description = _get_str(parameters, 4)
+        extent      = _get_str(parameters, 5)
+        map_state   = _get_str(parameters, 6)
+        graphics    = _get_str(parameters, 7)
+        permissions = _get_str(parameters, 8)
+        thumbnail   = _get_str(parameters, 9)
+        shared_raw  = _get_str(parameters, 10)
 
-        data = {FIELD_NAME: name, FIELD_WEBMAP_ID: webmap_id}
+        data = {FIELD_NAME: name, FIELD_WEBMAP_ID: webmap_id, FIELD_APP_NAME: app_name}
         if description:  data[FIELD_DESCRIPTION] = description
         if extent:       data[FIELD_EXTENT]       = extent
         if map_state:    data[FIELD_MAP_STATE]    = map_state
@@ -101,6 +102,7 @@ class CreateProjectTool:
             _req("User Email",               "userEmail"),
             _req("Project Name",             "name"),
             _req("WebMap ID",                "webmapId"),
+            _req("App Name",                 "appName"),
             _opt("Description",              "description"),
             _opt("Extent (JSON)",            "extent"),
             _opt("Map State (JSON array)",   "mapState"),
@@ -122,7 +124,10 @@ class CreateProjectTool:
         w = parameters[2]
         if w.altered and not w.valueAsText:
             w.setErrorMessage("WebMap ID is required.")
-        e = parameters[4]
+        a = parameters[3]
+        if a.altered and not a.valueAsText:
+            a.setErrorMessage("App Name is required.")
+        e = parameters[5]
         if e.altered and e.valueAsText:
             try:
                 parsed = _json.loads(e.valueAsText)
@@ -135,8 +140,8 @@ class CreateProjectTool:
 
     def execute(self, parameters, messages):
         response = run(parameters, messages)
-        arcpy.SetParameterAsText(10, response.to_json())
+        arcpy.SetParameterAsText(11, response.to_json())
         if response.success and isinstance(response.data, dict):
-            arcpy.SetParameterAsText(11, response.data.get("thumbnail") or "")
+            arcpy.SetParameterAsText(12, response.data.get("thumbnail") or "")
 
     def postExecute(self, parameters): pass

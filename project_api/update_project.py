@@ -11,7 +11,7 @@ if _PROJECT_ROOT not in sys.path:
 import arcpy
 
 from helpers.constants import (
-    FIELD_DESCRIPTION, FIELD_EXTENT, FIELD_GRAPHICS, FIELD_MAP_STATE,
+    FIELD_APP_NAME, FIELD_DESCRIPTION, FIELD_EXTENT, FIELD_GRAPHICS, FIELD_MAP_STATE,
     FIELD_NAME, FIELD_PERMISSIONS, FIELD_SHARED, FIELD_THUMBNAIL,
 )
 from helpers.project_service import ProjectService
@@ -31,24 +31,26 @@ def run(parameters: list, messages: object) -> ResponseModel:
             arcpy.AddError("Parameter 'projectId' is required.")
             return ResponseModel.error("projectId is required.", 400)
 
-        name        = _get_str(parameters, 2)
-        description = _get_str(parameters, 3)
-        extent      = _get_str(parameters, 4)
-        map_state   = _get_str(parameters, 5)
-        graphics    = _get_str(parameters, 6)
-        permissions = _get_str(parameters, 7)
-        thumbnail   = _get_str(parameters, 8)
-        shared_raw  = _get_str(parameters, 9)
+        app_name    = _get_str(parameters, 2)
+        name        = _get_str(parameters, 3)
+        description = _get_str(parameters, 4)
+        extent      = _get_str(parameters, 5)
+        map_state   = _get_str(parameters, 6)
+        graphics    = _get_str(parameters, 7)
+        permissions = _get_str(parameters, 8)
+        thumbnail   = _get_str(parameters, 9)
+        shared_raw  = _get_str(parameters, 10)
 
         data: dict = {}
-        if name:        data[FIELD_NAME]        = name
-        if description: data[FIELD_DESCRIPTION] = description
-        if extent:      data[FIELD_EXTENT]       = extent
-        if map_state:   data[FIELD_MAP_STATE]    = map_state
-        if graphics:    data[FIELD_GRAPHICS]     = graphics
-        if permissions: data[FIELD_PERMISSIONS]  = permissions
-        if thumbnail:   data[FIELD_THUMBNAIL]    = thumbnail
-        if shared_raw:  data[FIELD_SHARED]       = shared_raw
+        if app_name:    data[FIELD_APP_NAME]     = app_name
+        if name:        data[FIELD_NAME]         = name
+        if description: data[FIELD_DESCRIPTION]  = description
+        if extent:      data[FIELD_EXTENT]        = extent
+        if map_state:   data[FIELD_MAP_STATE]     = map_state
+        if graphics:    data[FIELD_GRAPHICS]      = graphics
+        if permissions: data[FIELD_PERMISSIONS]   = permissions
+        if thumbnail:   data[FIELD_THUMBNAIL]     = thumbnail
+        if shared_raw:  data[FIELD_SHARED]        = shared_raw
 
         if not data:
             arcpy.AddWarning("No update fields provided.")
@@ -106,6 +108,7 @@ class UpdateProjectTool:
         return [
             _req("User Email",               "userEmail"),
             _req("Project ID",               "projectId"),
+            _opt("App Name",                 "appName"),
             _opt("Project Name",             "name"),
             _opt("Description",              "description"),
             _opt("Extent (JSON)",            "extent"),
@@ -122,14 +125,14 @@ class UpdateProjectTool:
     def updateParameters(self, parameters): pass
 
     def updateMessages(self, parameters):
-        n = parameters[2]
+        n = parameters[3]
         if n.altered and n.valueAsText == "":
             n.setErrorMessage("Name cannot be blank when provided for update.")
 
     def execute(self, parameters, messages):
         response = run(parameters, messages)
-        arcpy.SetParameterAsText(10, response.to_json())
+        arcpy.SetParameterAsText(11, response.to_json())
         if response.success and isinstance(response.data, dict):
-            arcpy.SetParameterAsText(11, response.data.get("thumbnail") or "")
+            arcpy.SetParameterAsText(12, response.data.get("thumbnail") or "")
 
     def postExecute(self, parameters): pass

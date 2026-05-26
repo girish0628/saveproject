@@ -84,7 +84,11 @@ def get_logger(name: str, log_file: Optional[str] = None, level: Optional[int] =
 
 
 class ArcPyMessageHandler(logging.Handler):
-    """Forwards log records to the ArcGIS Pro GP message panel."""
+    """Forwards WARNING+ records to the ArcGIS GP message panel.
+    INFO/DEBUG go to the rotating file only — not the job history."""
+
+    def __init__(self) -> None:
+        super().__init__(level=logging.WARNING)
 
     def emit(self, record: logging.LogRecord) -> None:
         if not _ARCPY_AVAILABLE:
@@ -92,10 +96,8 @@ class ArcPyMessageHandler(logging.Handler):
         msg = self.format(record)
         if record.levelno >= logging.ERROR:
             _arcpy.AddError(msg)
-        elif record.levelno >= logging.WARNING:
-            _arcpy.AddWarning(msg)
         else:
-            _arcpy.AddMessage(msg)
+            _arcpy.AddWarning(msg)
 
 
 # ---------------------------------------------------------------------------
@@ -133,7 +135,18 @@ def search_rows(fc_path: str, fields: List[str], where_clause: Optional[str] = N
     try:
         with _arcpy.da.SearchCursor(fc_path, fields, where_clause) as cursor:
             for row in cursor:
-                yield dict(zip(fields, row))
+                # ArcPy BLOB fields return a memoryview backed by the cursor's
+                # internal C buffer, which is invalidated when the cursor moves
+                # or closes.  Convert to bytes here, while the cursor is open.
+                safe = {}
+                for f, v in zip(fields, row):
+                    if isinstance(v, memoryview):
+                        try:
+                            v = bytes(v)
+                        except (TypeError, ValueError):
+                            v = None
+                    safe[f] = v
+                yield safe
     except Exception as exc:
         raise RuntimeError(f"SearchCursor failed on '{fc_path}': {exc}") from exc
 

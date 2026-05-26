@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 from helpers.constants import (
     FC_PROJECTS,
     FGDB_PATH,
+    FIELD_APP_NAME,
     FIELD_DESCRIPTION,
     FIELD_EXTENT,
     FIELD_GRAPHICS,
@@ -201,7 +202,8 @@ class ProjectValidator:
         ProjectValidator._require(data.get(FIELD_NAME),      FIELD_NAME)
         ProjectValidator._require(data.get(FIELD_WEBMAP_ID), FIELD_WEBMAP_ID)
         ProjectValidator._require(data.get(FIELD_OWNER),     FIELD_OWNER)
-        for fname in (FIELD_NAME, FIELD_WEBMAP_ID, FIELD_OWNER):
+        ProjectValidator._require(data.get(FIELD_APP_NAME),  FIELD_APP_NAME)
+        for fname in (FIELD_NAME, FIELD_WEBMAP_ID, FIELD_OWNER, FIELD_APP_NAME):
             ProjectValidator._check_len(data.get(fname), fname)
         if data.get(FIELD_DESCRIPTION):
             ProjectValidator._check_len(data[FIELD_DESCRIPTION], FIELD_DESCRIPTION)
@@ -225,6 +227,9 @@ class ProjectValidator:
         if FIELD_NAME in data:
             ProjectValidator._require(data[FIELD_NAME], FIELD_NAME)
             ProjectValidator._check_len(data[FIELD_NAME], FIELD_NAME)
+        if FIELD_APP_NAME in data:
+            ProjectValidator._require(data[FIELD_APP_NAME], FIELD_APP_NAME)
+            ProjectValidator._check_len(data[FIELD_APP_NAME], FIELD_APP_NAME)
         if data.get(FIELD_WEBMAP_ID):
             ProjectValidator._check_len(data[FIELD_WEBMAP_ID], FIELD_WEBMAP_ID)
         if data.get(FIELD_EXTENT):
@@ -301,11 +306,11 @@ class ProjectService:
         try:
             ProjectValidator.validate_fgdb()
             all_rows: List[Dict[str, Any]] = fetch_all(FC_PROJECTS, SELECT_FIELDS)
-            accessible = [
-                self._row_to_project(row).to_dict()
-                for row in all_rows
-                if self._can_access(self._row_to_project(row))
-            ]
+            accessible = []
+            for row in all_rows:
+                project = self._row_to_project(row)
+                if self._can_access(project):
+                    accessible.append(project.to_dict())
             logger.info("get_all_projects: %d / %d accessible to '%s'.",
                         len(accessible), len(all_rows), self._user_email)
             return ResponseModel.ok(message=f"{len(accessible)} project(s) found.", data=accessible)
@@ -345,6 +350,7 @@ class ProjectService:
                 _b64_to_blob(data.get(FIELD_THUMBNAIL)),
                 shared_int,
                 self._user_email,
+                data.get(FIELD_APP_NAME),
             ])
             logger.info("Project '%s' created by '%s'.", project_id, self._user_email)
 
@@ -415,6 +421,7 @@ class ProjectService:
                 _resolve(FIELD_EXTENT,      project.extent),
                 _resolve(FIELD_PERMISSIONS, project.permissions),
                 shared_int,
+                _resolve(FIELD_APP_NAME,    project.app_name),
             ], where)
 
             if updated == 0:

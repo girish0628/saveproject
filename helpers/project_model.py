@@ -7,10 +7,15 @@ from typing import Any, Dict, Optional
 
 
 def _blob_to_b64(blob_val) -> Optional[str]:
-    """Convert ArcPy BLOB (memoryview / bytearray / bytes) to a Base64 string."""
-    if blob_val is None:
+    # ArcPy BLOB memoryview objects do not support .tobytes(); bytes() uses the
+    # C buffer protocol instead and works across all ArcPy Pro versions.
+    if not blob_val:
         return None
-    return base64.b64encode(bytes(blob_val)).decode("utf-8")
+    try:
+        b = bytes(blob_val)
+    except (TypeError, ValueError):
+        return None
+    return base64.b64encode(b).decode("utf-8") if b else None
 
 
 @dataclass
@@ -24,6 +29,7 @@ class Project:
     map_state:        Optional[str]      = field(default=None)
     graphics:         Optional[str]      = field(default=None)
     permissions:      Optional[str]      = field(default=None)
+    app_name:         Optional[str]      = field(default=None)
     thumbnail:        Optional[str]      = field(default=None)
     shared:           int                = field(default=0)
     object_id:        Optional[int]      = field(default=None)
@@ -45,6 +51,7 @@ class Project:
             map_state        = row.get("MAP_STATE"),
             graphics         = row.get("GRAPHICS"),
             permissions      = row.get("PERMISSIONS"),
+            app_name         = row.get("APP_NAME"),
             thumbnail        = _blob_to_b64(row.get("THUMBNAIL")),
             global_id        = row.get("GlobalID"),
             created_user     = row.get("created_user"),
